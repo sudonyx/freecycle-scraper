@@ -1,5 +1,60 @@
 require('dotenv').config()
 const https = require('https');
+import { parse } from 'node-html-parser';
+const fs = require('fs')
+
+const town = 'Sutton'
+const searchItem = 'table'
+
+const options = {
+  hostname: 'www.freecycle.org',
+  port: 443,
+  path: `/town/${town}UK`,
+  method: 'GET',
+}
+
+const req = https.request(options, (res) => {
+  let data = '';
+
+  res.on('data', (chunk) => {
+    data += chunk;
+  });
+
+  res.on('end', () => {
+    const root = parse(data)
+    const fcData = JSON.parse(root.querySelector('fc-data').attributes[':data']);
+
+    fcData['posts'].forEach(post => {
+      if (post['type']['name'] === 'OFFER' && post['subject'].toLowerCase().includes(searchItem)) {
+        console.log('Item:', post['subject']);
+        console.log('Description:', post['description']);
+      }
+    });
+
+    const jsonString = JSON.stringify(fcData, null, 2);
+
+    fs.writeFile('./fc-data.json', jsonString, err => {
+      if (err) {
+          console.log('Error writing file', err)
+      } else {
+          console.log('Successfully wrote file')
+      }
+  })
+  });
+});
+
+req.on('error', (e) => {
+  console.error(e);
+});
+req.end()
+
+
+// Code below unused: session cookie is no longer accessible due to hhtponly flag
+
+/*
+
+require('dotenv').config()
+const https = require('https');
 const querystring = require('querystring');
 
 const postData = querystring.stringify({
@@ -20,6 +75,10 @@ const postOptions = {
 }
 
 const req = https.request(postOptions, (resp) => {
+  console.log(resp);
+  console.log(resp.headers);
+  console.log(resp.statusCode);
+
   const cookies: string[] = resp.headers["set-cookie"];
   const authCookie = cookies.find((cookie) => cookie.startsWith("MyFreecycle="))
     .split(';')[0]; // Get cookie key=value without metadata
@@ -70,3 +129,5 @@ const req = https.request(postOptions, (resp) => {
 
 req.write(postData)
 req.end()
+
+*/

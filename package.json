@@ -23,7 +23,8 @@
     "cheerio": "^1.0.0-rc.12",
     "dotenv": "^16.3.1",
     "esbuild": "^0.19.5",
-    "follow-redirects": "^1.15.3"
+    "follow-redirects": "^1.15.3",
+    "node-html-parser": "^6.1.11"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.126",
