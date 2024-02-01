@@ -1,15 +1,15 @@
-require('dotenv').config()
 const https = require('https');
+const fs = require('fs');
 import { parse } from 'node-html-parser';
-const fs = require('fs')
+const searchData = require('../search.json');
 
-const town = 'Sutton'
-const searchItem = 'table'
+const searchTown = searchData['searchTown'];
+const searchItem = searchData['searchItem'].toLowerCase();
 
 const options = {
   hostname: 'www.freecycle.org',
   port: 443,
-  path: `/town/${town}UK`,
+  path: `/town/${searchTown}`,
   method: 'GET',
 }
 
@@ -24,12 +24,27 @@ const req = https.request(options, (res) => {
     const root = parse(data)
     const fcData = JSON.parse(root.querySelector('fc-data').attributes[':data']);
 
+    let posts = {};
+
     fcData['posts'].forEach(post => {
-      if (post['type']['name'] === 'OFFER' && post['subject'].toLowerCase().includes(searchItem)) {
-        console.log('Item:', post['subject']);
-        console.log('Description:', post['description']);
+      if (post['type']['name'] === 'OFFER') {
+        if (!searchItem) {
+          posts[post['id']] = {
+            'Item' : post['subject'],
+            'Description' : post['description']
+          }
+        } else {
+          if (post['subject'].toLowerCase().includes(searchItem)) {
+            posts[post['id']] = {
+              'Item' : post['subject'],
+              'Description' : post['description']
+            }
+          }
+        }
       }
     });
+
+    console.log(posts);
 
     const jsonString = JSON.stringify(fcData, null, 2);
 
@@ -39,7 +54,7 @@ const req = https.request(options, (res) => {
       } else {
           console.log('Successfully wrote file')
       }
-  })
+    });
   });
 });
 
@@ -47,6 +62,9 @@ req.on('error', (e) => {
   console.error(e);
 });
 req.end()
+
+
+
 
 
 // Code below unused: session cookie is no longer accessible due to hhtponly flag
